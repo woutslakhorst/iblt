@@ -1,67 +1,34 @@
 package bloom
 
 import (
-	"crypto/rand"
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func BenchmarkFilter_Add(b *testing.B) {
-	filter := NewFilter1024()
+	filter := NewFilter512()
+	numEntries := 1000
+	var nCollisions, firstCollision []int
 
-	nEval := 1000
-	collision := 0
-	for i := 0; i < nEval; i++ {
-		collision += addUntilCollision(filter)
+	// benchmark loop
+	for n := 0; n < b.N; n++ {
+		nCollisions, firstCollision = benchmarkAdd(&filter, n, numEntries)
 	}
-	fmt.Printf("Collision occurs on average after adding %.2f datapoints\n", float32(collision) / float32(nEval))
-	b.Fail()
 
-	//collision = 0
-	//collision += addDatasetUntilCollision(filter, generateDataset(1000))
-	//fmt.Printf("Collision occurs on average after adding %.2f datapoints\n", float32(collision) / float32(nEval))
-}
-
-func addDatasetUntilCollision(filter Filter, dataset [][]byte) int {
-	for i, v := range dataset {
-		if !filter.Add(v) {
-			return i
-		}
-	}
-	fmt.Printf("complete dataset added\n")
-	return -1
-}
-
-func addUntilCollision(filter Filter) int {
-	for totalElem := 0;;totalElem++ {
-		if !filter.Add(generateData()) {
-			return totalElem
-		}
-	}
-}
-
-func generateData() []byte {
-	bytes := make([]byte, 256)  // Tx ids use 256-byte hashes
-	if _, err := rand.Read(bytes); err != nil {
-		panic(err)
-	}
-	return bytes
-}
-
-func generateDataset(n int) [][]byte {
-	dataset := make([][]byte, n)
-	for i := 0; i < n; i++ {
-		dataset[i] = generateData()
-	}
-	return dataset
+	b.Logf("Filtersize: %d bits, hashes: %d\n", len(filter.fingerprint)*8, len(filter.seeds))
+	b.Logf("Support: %d", b.N)
+	b.Logf("First collision - ")
+	statistics(firstCollision, b)
+	b.Logf("Average collisions for %d entries - ", numEntries)
+	statistics(nCollisions, b)
 }
 
 func TestFilter_Add(t *testing.T) {
 	filter := Filter{
 		fingerprint: make([]byte, 32),
-		seeds: []uint32{0,1,2},
+		seeds:       []uint32{0, 1, 2},
 	}
+	filter = NewFilter512()
 	d1 := generateData()
 	d2 := generateData()
 	assert.True(t, filter.Add(d1), "failed to add first data point")
@@ -72,8 +39,9 @@ func TestFilter_Add(t *testing.T) {
 func TestFilter_Check(t *testing.T) {
 	filter := Filter{
 		fingerprint: make([]byte, 32),
-		seeds: []uint32{0,1,2},
+		seeds:       []uint32{0, 1, 2},
 	}
+	filter = NewFilter512()
 	d1 := generateData()
 	d2 := generateData()
 
@@ -82,7 +50,7 @@ func TestFilter_Check(t *testing.T) {
 	}
 
 	assert.True(t, filter.Check(d1), "failed to identify only datapoint in filter")
-	assert.False(t, filter.Check(d2), "identified datapoint not in filter") // fails
+	assert.False(t, filter.Check(d2), "identified datapoint not in filter")
 }
 
 func TestFilter_hashValues(t *testing.T) {
@@ -93,6 +61,5 @@ func TestNewFilter512(t *testing.T) {
 	flt := NewFilter512()
 	assert.Equal(t, 512, len(flt.fingerprint), "incorrect fingerprint length")
 	assert.Equal(t, 5, len(flt.seeds), "incorrect number of hash seeds")
-	//assert.Equal(t, 0, flt.checksum, "initial checksum not zero")
+	assert.Equal(t, [32]byte{}, flt.checksum, "initial checksum not zero")
 }
-
