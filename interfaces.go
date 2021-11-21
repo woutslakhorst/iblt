@@ -1,6 +1,8 @@
 package bloom
 
-type Adder interface {
+const KeyLength = 32
+
+type Bloom interface {
 	Add(data []byte) bool
-	clone() Adder
+	clone() Bloom
 }

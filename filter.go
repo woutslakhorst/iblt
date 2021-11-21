@@ -39,7 +39,7 @@ func NewFilter1024() Filter {
 	}
 }
 
-func (f *Filter) clone() Adder {
+func (f *Filter) clone() Bloom {
 	seeds := make([]uint32, len(f.seeds))
 	copy(seeds, f.seeds)
 	return &Filter{
