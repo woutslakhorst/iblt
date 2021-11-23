@@ -36,7 +36,7 @@ func NewIbf(numBuckets int) *ibf {
 	}
 	return &ibf{
 		buckets:    buckets,
-		seeds:      []uint32{0, 1, 2},
+		seeds:      []uint32{0, 1, 2, 3},
 		keySeed:    uint32(33),
 		keyLength:  KeyLength,
 		numBuckets: numBuckets,
@@ -137,16 +137,6 @@ func (i *ibf) Decode() (remaining [][]byte, missing [][]byte, err error) {
 	}
 }
 
-func (i *ibf) getPures() []int {
-	var pures []int
-	for idx, b := range i.buckets {
-		if (b.count == 1 || b.count == -1) && i.hashKey(b.keySum) == b.hashSum {
-			pures = append(pures, idx)
-		}
-	}
-	return pures
-}
-
 func (i *ibf) hashIndices(key []byte) []uint32 {
 	hashes := make([]uint32, len(i.seeds))
 	for idx, seed := range i.seeds {
@@ -199,5 +189,5 @@ func (b *bucket) isEmpty() bool {
 }
 
 func (b *bucket) String() string {
-	return fmt.Sprintf("[count: %3d, keySum: %x, hashSum: %d]", b.count, b.keySum, b.hashSum)
+	return fmt.Sprintf("[count: %3d, keySum: %x, hashSum: %10d]", b.count, b.keySum, b.hashSum)
 }

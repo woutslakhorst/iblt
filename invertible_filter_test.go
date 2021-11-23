@@ -24,24 +24,26 @@ func BenchmarkIbf_Add(b *testing.B) {
 }
 
 func TestIbf_Decode(t *testing.T) {
-	numBuckets := 32
+	numBuckets := 256
 	ibfA := NewIbf(numBuckets)
 	ibfB := NewIbf(numBuckets)
 
-	N := 22000
+	N := 200
 	for i := 0; i < N; i++ {
 		a := generateData()
 		ibfA.Add(a)
-		if i%2000 == 0 {
+		if i%2 == 0 {
 			ibfB.Add(generateData())
 		} else {
 			ibfB.Add(a)
 		}
 	}
+	fmt.Println("initialized:")
 	fmt.Printf("bucketA[0]: %v\n", ibfA.buckets[0])
 	fmt.Printf("bucketB[0]: %v\n", ibfB.buckets[0])
 
 	err := ibfA.Subtract(ibfB)
+	fmt.Println("subtracted:")
 	if err != nil {
 		fmt.Printf("subtract error: %s\n", err.Error())
 	}
@@ -50,13 +52,20 @@ func TestIbf_Decode(t *testing.T) {
 	}
 
 	remaining, missing, err := ibfA.Decode()
+	fmt.Println("decoded:")
 	if err != nil {
 		fmt.Printf("decode error: %s\n", err.Error())
 	}
-
-	fmt.Printf("remaining: %d\n", len(remaining))
-	fmt.Printf("missing: %d\n", len(missing))
 	for i := range ibfA.buckets {
 		fmt.Printf("bucket[%03d]: %v\n", i, ibfA.buckets[i])
+	}
+
+	fmt.Printf("remaining: (%d)\n", len(remaining))
+	for _, x := range remaining {
+		fmt.Printf("\t%x\n", x)
+	}
+	fmt.Printf("missing: %d\n", len(missing))
+	for _, x := range missing {
+		fmt.Printf("\t%x\n", x)
 	}
 }
