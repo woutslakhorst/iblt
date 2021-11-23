@@ -142,7 +142,19 @@ func (i *ibf) hashIndices(key []byte) []uint32 {
 	for idx, seed := range i.seeds {
 		hashes[idx] = murmur3.Sum32WithSeed(key, seed) % uint32(i.numBuckets)
 	}
-	return hashes
+	return unique(hashes)
+}
+
+func unique(uintSlice []uint32) []uint32 {
+	keys := make(map[uint32]struct{})
+	var uniques []uint32
+	for _, v := range uintSlice {
+		if _, exists := keys[v]; !exists {
+			keys[v] = struct{}{}
+			uniques = append(uniques, v)
+		}
+	}
+	return uniques
 }
 
 func (i *ibf) hashKey(key []byte) uint32 {
