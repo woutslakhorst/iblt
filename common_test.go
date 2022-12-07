@@ -1,8 +1,8 @@
 package bloom
 
 import (
+	"crypto/rand"
 	"math"
-	"math/rand"
 	"testing"
 )
 

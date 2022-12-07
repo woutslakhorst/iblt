@@ -3,8 +3,9 @@ package bloom
 import (
 	"errors"
 	"fmt"
-	"github.com/spaolacci/murmur3"
 	"sort"
+
+	"github.com/spaolacci/murmur3"
 )
 
 //type IBF interface {
@@ -36,7 +37,7 @@ func NewIbf(numBuckets int) *ibf {
 	}
 	return &ibf{
 		buckets:    buckets,
-		seeds:      []uint32{0, 1, 2, 3},
+		seeds:      []uint32{0, 1, 2, 3, 4, 5},
 		keySeed:    uint32(33),
 		keyLength:  KeyLength,
 		numBuckets: numBuckets,
@@ -108,7 +109,11 @@ func (i *ibf) validateSubtrahend(o *ibf) error {
 }
 
 func (i *ibf) Decode() (remaining [][]byte, missing [][]byte, err error) {
+	//fmt.Printf("started decoding, candidates: %d\n", i.candidates())
 	for {
+		//for j := range i.buckets {
+		//	fmt.Printf("bucket[%03d]: %v\n", j, i.buckets[j])
+		//}
 		updated := false
 
 		// for each pure (count == +1 or -1), if hashSum = h(key) -> Add(count == -1)/Delete(count == 1) key
@@ -122,6 +127,8 @@ func (i *ibf) Decode() (remaining [][]byte, missing [][]byte, err error) {
 					i.Add(b.keySum)
 				}
 				updated = true
+				//fmt.Printf("decoded entry, remaining candidates: %d\n", i.candidates())
+				//break
 			}
 		}
 
@@ -135,6 +142,16 @@ func (i *ibf) Decode() (remaining [][]byte, missing [][]byte, err error) {
 			return remaining, missing, nil
 		}
 	}
+}
+
+func (i *ibf) candidates() int {
+	count := 0
+	for _, b := range i.buckets {
+		if (b.count == 1 || b.count == -1) && i.hashKey(b.keySum) == b.hashSum {
+			count++
+		}
+	}
+	return count
 }
 
 func (i *ibf) hashIndices(key []byte) []uint32 {
@@ -201,5 +218,6 @@ func (b *bucket) isEmpty() bool {
 }
 
 func (b *bucket) String() string {
-	return fmt.Sprintf("[count: %3d, keySum: %x, hashSum: %10d]", b.count, b.keySum, b.hashSum)
+	expectedHashKey := murmur3.Sum32WithSeed(b.keySum, uint32(33))
+	return fmt.Sprintf("[count: %3d, keySum: %x, hashSum: %10d, hash(key): %10d]", b.count, b.keySum, b.hashSum, expectedHashKey)
 }

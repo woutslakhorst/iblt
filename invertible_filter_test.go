@@ -23,12 +23,45 @@ func BenchmarkIbf_Add(b *testing.B) {
 	statistics(nCollisions, b)
 }
 
+func BenchmarkIbf_a(b *testing.B) {
+	var nDecodes = make([]int, b.N)
+
+	for n := 0; n < b.N; n++ {
+		nDecodes[n] = runTest()
+	}
+	statistics(nDecodes, b)
+}
+
+// doubling the amount of buckets, more than doubles the set difference that can be solved
+func runTest() int {
+	numBuckets := 1024
+	ibfA := NewIbf(numBuckets)
+	ibfB := NewIbf(numBuckets)
+
+	N := 600 // common size and set difference, each set has N/2 keys the other doesn't have
+	for i := 0; i < N; i++ {
+		a := generateData()
+		ibfA.Add(a)
+		if i%2 == 0 {
+			ibfB.Add(generateData())
+		} else {
+			ibfB.Add(a)
+		}
+	}
+	ibfA.Subtract(ibfB)
+	if _, _, err := ibfA.Decode(); err != nil {
+		return 0
+	}
+
+	return 1
+}
+
 func TestIbf_Decode(t *testing.T) {
 	numBuckets := 256
 	ibfA := NewIbf(numBuckets)
 	ibfB := NewIbf(numBuckets)
 
-	N := 200
+	N := 200 // common size and set difference, each set has N/2 keys the other doesn't have
 	for i := 0; i < N; i++ {
 		a := generateData()
 		ibfA.Add(a)
@@ -43,29 +76,29 @@ func TestIbf_Decode(t *testing.T) {
 	fmt.Printf("bucketB[0]: %v\n", ibfB.buckets[0])
 
 	err := ibfA.Subtract(ibfB)
-	fmt.Println("subtracted:")
-	if err != nil {
-		fmt.Printf("subtract error: %s\n", err.Error())
-	}
-	for i := range ibfA.buckets {
-		fmt.Printf("bucket[%03d]: %v\n", i, ibfA.buckets[i])
-	}
+	//fmt.Println("subtracted:")
+	//if err != nil {
+	//	fmt.Printf("subtract error: %s\n", err.Error())
+	//}
+	//for i := range ibfA.buckets {
+	//	fmt.Printf("bucket[%03d]: %v\n", i, ibfA.buckets[i])
+	//}
 
-	remaining, missing, err := ibfA.Decode()
+	_, _, err = ibfA.Decode()
 	fmt.Println("decoded:")
 	if err != nil {
 		fmt.Printf("decode error: %s\n", err.Error())
 	}
-	for i := range ibfA.buckets {
-		fmt.Printf("bucket[%03d]: %v\n", i, ibfA.buckets[i])
-	}
-
-	fmt.Printf("remaining: (%d)\n", len(remaining))
-	for _, x := range remaining {
-		fmt.Printf("\t%x\n", x)
-	}
-	fmt.Printf("missing: %d\n", len(missing))
-	for _, x := range missing {
-		fmt.Printf("\t%x\n", x)
-	}
+	//for i := range ibfA.buckets {
+	//	fmt.Printf("bucket[%03d]: %v\n", i, ibfA.buckets[i])
+	//}
+	//
+	//fmt.Printf("remaining: (%d)\n", len(remaining))
+	//for _, x := range remaining {
+	//	fmt.Printf("\t%x\n", x)
+	//}
+	//fmt.Printf("missing: %d\n", len(missing))
+	//for _, x := range missing {
+	//	fmt.Printf("\t%x\n", x)
+	//}
 }
